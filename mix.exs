@@ -4,7 +4,7 @@ defmodule Rela.MixProject do
   def project do
     [
       app: :rela,
-      version: "1.0.0",
+      version: "1.0.1",
       elixir: "~> 1.13",
       deps: deps(),
       start_permanent: Mix.env == :prod,
