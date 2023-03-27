@@ -1,4 +1,63 @@
 defmodule Rela do
+  @moduledoc """
+  # EN
+
+  This module will help you setup non-traditional relational databases that keep track of every connection between multiple tables.
+
+  Startup guide:
+
+  1. Install this module as a dependency in your mix and run `mix deps.get`
+  2. Create your own database schema modules
+  3. Create a separate Rela module in your app lib folder
+  4. With the help of `use` add this Rela app to your Rela module with opts that have this structure:
+      use Rela, %{
+          relations: [
+              %{actor: `One of your schema modules`, contractor: `One of your schema modules`, arity: :one_to_one},
+              %{actor: `One of your schema modules`, contractor: `One of your schema modules`, arity: :one_to_many},
+              %{actor: `One of your schema modules`, contractor: `One of your schema modules`, arity: :many_to_many},
+              ...
+          ],
+          repo: `Your Repo module here`
+      }
+  5. In your Application, after starting your Repo, you should call `Name of your Rela module`.check_r_tables(), which will create `r_`-tables
+  6. If you were using the old version of Rela, you should call `Name of your Rela module`.update_from_previous_version\1
+     with a key map that contains previously used aliases and the table names they represented, similar to this:
+      update_from_previous_version(%{
+          "`alias used in relation_types`" => "`table name that used the alias`",
+          ...
+      })
+  7. After all of that, you should be able to use the remaining functions to manipulate the `r_`-tables
+
+
+  # RU
+
+  Этот модуль поможет вам создавать нетрадиционные реляционные базы данных которые следят за всеми связями между множеств таблиц.
+
+  Быстрый старт:
+
+  1. Установите этот модуль как зависимость в вашем mix и запустите `mix deps.get`
+  2. Создайте модули схем для своей базы данных
+  3. Создайте отдельный Rela модуль в своей папке lib
+  4. С помощью `use` добавьте это Rela приложение к своему Rela модулю с опциями, похожими на эту структуру:
+      use Rela, %{
+          relations: [
+              %{actor: `Один из ваших модулей схемы`, contractor: `Один из ваших модулей схемы`, arity: :one_to_one},
+              %{actor: `Один из ваших модулей схемы`, contractor: `Один из ваших модулей схемы`, arity: :one_to_many},
+              %{actor: `Один из ваших модулей схемы`, contractor: `Один из ваших модулей схемы`, arity: :many_to_many},
+              ...
+          ],
+          repo: `Ваш Repo модуль`
+      }
+  5. В вашем Application, после запуска репозитория, необходимо вызвать `Имя вашего модуля Rela`.check_r_tables(), что создаст `r_`-таблицы
+  6. Если вы использовали старую версию Rela, необходимо вызвать `Имя вашего модуля Rela`.update_from_previous_version\1
+     с ключевой картой в которой находятся прежде используемые псевдонимы и таблицы, которые они представляли, похожую на эту:
+      update_from_previous_version(%{
+          "`псевдоним с relation_types`" => "`имя таблицы, использующую этот псевдоним`",
+          ...
+      })
+  7. После всего этого, вы можете проверять оставшиеся функции для манипуляции `r_`-таблиц
+  """
+  @moduledoc since: "1.0.0"
   use Ecto.Schema
 
   schema "" do
@@ -37,8 +96,23 @@ defmodule Rela do
         end
       end
 
+      @doc """
+        Check if the two items are related
+
+        Use this function to check if a relation exists between item `left` and item `right`
+
+        Проверка связи между `left` и `right`
+
+        ## Examples / Примеры
+
+            iex> Rela.exists_relation(%LeftItem{id: 1}, %RightItem{id: 4})
+            {:ok, "relation between left_items and right_items exists"}
+
+      """
+      def exists_relation(left, right)
+
       def exists_relation(left, _right) when not is_struct(left),
-        do: {:error, "left item is not a struct"}
+      do: {:error, "left item is not a struct"}
 
       def exists_relation(_left, right) when not is_struct(right),
         do: {:error, "right item is not a struct"}
@@ -70,8 +144,23 @@ defmodule Rela do
         end
       end
 
+      @doc """
+        Get related items
+
+        Use this function to get the items under the module passed to `right` that is related to the `left` item
+
+        Получение предметов модуля `right`, связанных с предметом `left`
+
+        ## Examples / Примеры
+
+            iex> Rela.get_contractors(%LeftItem{id: 1}, RightItem)
+            {:ok, [%RightItem{id: 4, name: "RIGHT"}, %{id: 5, name: "RIGHTOO"}]}
+
+      """
+      def get_contractors(left, right)
+
       def get_contractors(left, _right) when not is_struct(left),
-        do: {:error, "left item is not a struct"}
+       do: {:error, "left item is not a struct"}
 
       def get_contractors(left, right) when not is_struct(right),
         do: get_contractors(left, right.__struct__)
@@ -108,6 +197,21 @@ defmodule Rela do
         end
       end
 
+      @doc """
+        Get related item
+
+        Use this function to get the item under the module passed to `right` that is related to the `left` item
+
+        Получение одного предмета с модулем `right`, связанного с предметом `left`
+
+        ## Examples / Примеры
+
+            iex> Rela.get_contractor(%LeftItem{id: 1}, RightItem)
+            {:ok, %RightItem{id: 4, name: "RIGHT"}}
+
+      """
+      def get_contractor(left, right)
+
       def get_contractor(left, _right) when not is_struct(left),
         do: {:error, "left item is not a struct"}
 
@@ -128,6 +232,23 @@ defmodule Rela do
       end
 
       def get_contractor(left, right), do: {:error, "left item has no id"}
+
+      @doc """
+        Delete a relation
+
+        Use this function to delete a relation between the `left` and `right` items
+
+        This function doesn't actually delete the relation from the DB, but hides it
+
+        Удаление (скрытие) связи между предметами `left` и `right`
+
+        ## Examples / Примеры
+
+            iex> Rela.delete_rela(%LeftItem{id: 1}, %RightItem{id: 4})
+            {:ok, "relation between left_items and right_items deleted"}
+
+      """
+      def delete_rela(left, right)
 
       def delete_rela(left, _right) when not is_struct(left),
         do: {:error, "left item is not a struct"}
@@ -157,6 +278,21 @@ defmodule Rela do
           {:error, "right item has no id"}
         end
       end
+
+      @doc """
+        Create a relation
+
+        Use this function to create a relation between the `left` and `right` items
+
+        Создание связи между прдеметом `left` и `right`
+
+        ## Examples / Примеры
+
+            iex> Rela.create(%LeftItem{id: 1}, %RightItem{id: 4})
+            {:ok, "relation between left_items and right_items created"}
+
+      """
+      def create(left, right)
 
       def create(left, _right) when not is_struct(left),
         do: {:error, "left item is not a struct"}
@@ -233,12 +369,12 @@ defmodule Rela do
 
       defp insert(table, actor_id, contractor_id, contractor, first_time? \\ true) do
         try do
-          if not exists(table, actor_id, contractor_id, contractor) do
-            @repo.insert_all("r_#{table}", [
-              %{actor_id: actor_id, contractor_id: contractor_id, contractor: contractor}
-            ])
-          else
-            {:error, "relation between #{table} and #{contractor} already exists"}
+        if not exists(table, actor_id, contractor_id, contractor) do
+            @repo.insert_all({"r_#{table}", Rela}, [
+            %{actor_id: actor_id, contractor_id: contractor_id, contractor: contractor}
+          ])
+        else
+          {:error, "relation between #{table} and #{contractor} already exists"}
           end
         rescue
           any ->
