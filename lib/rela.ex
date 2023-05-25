@@ -393,7 +393,7 @@ defmodule Rela do
           from(r in {"r_#{table}", Rela},
             where:
               r.actor_id == ^actor_id and r.contractor_id == ^contractor_id and
-                r.contractor == ^contractor
+                r.contractor == ^contractor and not r.is_deleted
           )
         )
       end
