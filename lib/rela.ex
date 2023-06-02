@@ -400,8 +400,7 @@ defmodule Rela do
 
       defp delete(rela) do
         rela
-        |> @chng.change(is_deleted: true)
-        |> @repo.update()
+        |> @repo.delete()
       end
     end
   end
