@@ -174,6 +174,7 @@ defmodule Rela do
              contractors <-
                Enum.reduce(
                  right,
+                 [],
                  fn a, acc ->
                    Enum.at(
                      @repo.all(from(r in right_struct, where: r.id == ^a.contractor_id)),
