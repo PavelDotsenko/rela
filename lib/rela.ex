@@ -112,7 +112,7 @@ defmodule Rela do
       def exists_relation(left, right)
 
       def exists_relation(left, _right) when not is_struct(left),
-      do: {:error, "left item is not a struct"}
+        do: {:error, "left item is not a struct"}
 
       def exists_relation(_left, right) when not is_struct(right),
         do: {:error, "right item is not a struct"}
@@ -160,7 +160,7 @@ defmodule Rela do
       def get_contractors(left, right)
 
       def get_contractors(left, _right) when not is_struct(left),
-       do: {:error, "left item is not a struct"}
+        do: {:error, "left item is not a struct"}
 
       def get_contractors(left, right) when not is_struct(right),
         do: get_contractors(left, right.__struct__)
@@ -172,15 +172,20 @@ defmodule Rela do
           when not is_nil(left_id) do
         with [_ | _] = right <- get(left_table, left_id, right_table),
              contractors <-
-               Enum.map(
+               Enum.reduce(
                  right,
-                 fn a ->
+                 fn a, acc ->
                    Enum.at(
                      @repo.all(from(r in right_struct, where: r.id == ^a.contractor_id)),
                      0
                    )
+                   |> case do
+                     nil -> acc
+                     a -> [a | acc]
+                   end
                  end
-               ) do
+               )
+               |> Enum.reverse() do
           {:ok, contractors}
         else
           [] -> {:error, "relations between #{left_table} and #{right_table} not found"}
@@ -369,12 +374,12 @@ defmodule Rela do
 
       defp insert(table, actor_id, contractor_id, contractor, first_time? \\ true) do
         try do
-        if not exists(table, actor_id, contractor_id, contractor) do
+          if not exists(table, actor_id, contractor_id, contractor) do
             @repo.insert_all({"r_#{table}", Rela}, [
-            %{actor_id: actor_id, contractor_id: contractor_id, contractor: contractor}
-          ])
-        else
-          {:error, "relation between #{table} and #{contractor} already exists"}
+              %{actor_id: actor_id, contractor_id: contractor_id, contractor: contractor}
+            ])
+          else
+            {:error, "relation between #{table} and #{contractor} already exists"}
           end
         rescue
           any ->
